@@ -1,7 +1,11 @@
 {
   "name": "mycure-backend-assessment",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "db:setup": "bun run src/db/setup.ts",
+    "db:migrate": "bun run src/db/setup.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch"
   },
   "dependencies": {
     "hono": "^4.9.8",

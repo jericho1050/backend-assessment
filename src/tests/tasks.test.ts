@@ -1,53 +1,24 @@
 import { describe, test, expect, beforeEach, mock } from 'bun:test'
+import { createTestDatabase, seedTestData } from '@/db/test-database'
+
+// Create test database before importing anything that uses db
+const testDb = createTestDatabase()
+
+// Mock the database module before importing app
+mock.module('@/db/database', () => ({
+    db: testDb
+}))
+
 import app from '@/index'
 
 describe('Tasks API', () => {
-    let mockTasks: any[]
-
     beforeEach(() => {
-        // Mock task data for testing
-        mockTasks = [
-            {
-                id: 1,
-                title: 'Complete project documentation',
-                description: 'Write comprehensive documentation for the API',
-                status: 'pending',
-                priority: 'high',
-                created_at: new Date('2024-01-01T10:00:00Z'),
-                updated_at: new Date('2024-01-01T10:00:00Z'),
-                due_date: new Date('2024-01-15T18:00:00Z')
-            },
-            {
-                id: 2,
-                title: 'Fix authentication bug',
-                description: 'Resolve login issues with OAuth integration',
-                status: 'in_progress',
-                priority: 'medium',
-                created_at: new Date('2024-01-02T09:30:00Z'),
-                updated_at: new Date('2024-01-03T14:15:00Z'),
-                due_date: new Date('2024-01-10T17:00:00Z')
-            },
-            {
-                id: 3,
-                title: 'Update dependencies',
-                description: 'Upgrade all npm packages to latest versions',
-                status: 'completed',
-                priority: 'low',
-                created_at: new Date('2024-01-03T11:00:00Z'),
-                updated_at: new Date('2024-01-04T16:30:00Z'),
-                due_date: new Date('2024-01-20T12:00:00Z')
-            },
-            {
-                id: 4,
-                title: 'Database optimization',
-                description: 'Optimize slow queries and add missing indexes',
-                status: 'pending',
-                priority: 'medium',
-                created_at: new Date('2024-01-04T13:45:00Z'),
-                updated_at: new Date('2024-01-04T13:45:00Z'),
-                due_date: new Date('2024-01-25T16:00:00Z')
-            }
-        ]
+        // Clear existing data and reset autoincrement using query().run()
+        testDb.query('DELETE FROM tasks').run()
+        testDb.query('DELETE FROM sqlite_sequence WHERE name="tasks"').run()
+
+        // Seed fresh test data for each test
+        seedTestData(testDb)
     })
     describe("GET /api/tasks", () => {
         test("should return all tasks with pagination", async () => {
