@@ -49,6 +49,15 @@ The following complex queries accompany the library schema:
 
 They include overdue books, popular books (6 months), user statistics, and a current-year revenue report.
 
+## Library DB Integration (Task 2.3)
+
+- Module: `src/db/library.ts` (connection, retries, prepared statements, transactions)
+- Docs: `docs/library-db.md`
+
+Notes:
+- Uses SQLite via Bun; respects `LIB_DB_PATH` env var.
+- Transactions implement availability checks and rollback-on-failure.
+
 ## API Endpoints
 
 ### Task Management (Public)
