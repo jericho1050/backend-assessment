@@ -63,4 +63,3 @@ See query name `revenue_report_current_year`.
   - `(user_id, returned_date)` to speed active-outstanding lookups
   - `(book_id, borrowed_date)` for popularity windows
 
-

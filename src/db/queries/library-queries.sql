@@ -129,4 +129,3 @@ GROUP BY strftime('%m', returned_date)
 HAVING total_fines > 0
 ORDER BY month_number ASC;
 
-
