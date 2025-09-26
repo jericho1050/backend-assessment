@@ -36,8 +36,52 @@ export const runMigrations = (database: Database) => {
 
             // Execute migration in a transaction using query().run() instead of exec
             const transaction = database.transaction(() => {
-                const migrationStmt = database.query(migrationSQL)
-                migrationStmt.run()
+                // Split SQL into individual statements, handling multi-line statements like triggers
+                const statements = []
+                let currentStatement = ''
+                let inMultiLineStatement = false
+
+                const lines = migrationSQL.split('\n')
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim()
+
+                    // Skip comments and empty lines
+                    if (trimmedLine.startsWith('--') || trimmedLine === '') {
+                        continue
+                    }
+
+                    currentStatement += line + '\n'
+
+                    // Check for keywords that start multi-line statements
+                    if (trimmedLine.toUpperCase().startsWith('CREATE TRIGGER') ||
+                        trimmedLine.toUpperCase().startsWith('BEGIN')) {
+                        inMultiLineStatement = true
+                    }
+
+                    // Check for end of multi-line statements
+                    if (inMultiLineStatement && trimmedLine.toUpperCase() === 'END;') {
+                        statements.push(currentStatement.trim())
+                        currentStatement = ''
+                        inMultiLineStatement = false
+                    } else if (!inMultiLineStatement && trimmedLine.endsWith(';')) {
+                        statements.push(currentStatement.trim())
+                        currentStatement = ''
+                    }
+                }
+
+                // Add any remaining statement
+                if (currentStatement.trim()) {
+                    statements.push(currentStatement.trim())
+                }
+
+                for (const statement of statements) {
+                    if (statement.trim()) {
+                        const migrationStmt = database.query(statement)
+                        migrationStmt.run()
+                    }
+                }
+
                 database.query('INSERT INTO migrations (filename) VALUES (?)').run(filename)
             })
 

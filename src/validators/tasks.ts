@@ -15,8 +15,23 @@ export const taskSchema = z.object({
   description: z.string().max(500),
   status: z.enum(['pending', 'in_progress', 'completed']).optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
-  due_date: dateString.optional() // will be null | string when present
+  due_date: dateString.optional(), // will be null | string when present
+  user_id: z.number().optional() // for associating tasks with users
 })
+
+// Extended task schema for database results (includes generated fields)
+export const taskWithMetadataSchema = taskSchema.extend({
+  id: z.number(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  user_id: z.number().nullable() // Can be null for legacy tasks
+})
+
+// Task creation schema (for API requests)
+export const createTaskSchema = taskSchema.omit({ user_id: true })
+
+// Task update schema (for API requests)
+export const updateTaskSchema = createTaskSchema.partial()
 
 const toNumber = (v: unknown) => {
   if (typeof v === 'string' && v.trim() !== '') {

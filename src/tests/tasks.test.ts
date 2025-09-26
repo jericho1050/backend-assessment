@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, mock } from 'bun:test'
 import { createTestDatabase, seedTestData } from '@/db/test-database'
+import { generateAccessToken } from '@/utils/auth.utils'
 
 // Create test database before importing anything that uses db
 const testDb = createTestDatabase()
@@ -11,11 +12,30 @@ mock.module('@/db/database', () => ({
 
 import app from '@/index'
 
+// Helper functions for authenticated requests
+const createAuthHeaders = async (userId: string, email: string, role: string) => {
+    const token = await generateAccessToken({ sub: userId, email, role })
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
+}
+
+const createAdminHeaders = async () => {
+    return await createAuthHeaders('1', 'admin@test.com', 'admin')
+}
+
+const createUserHeaders = async () => {
+    return await createAuthHeaders('2', 'user@test.com', 'user')
+}
+
 describe('Tasks API', () => {
     beforeEach(() => {
         // Clear existing data and reset autoincrement using query().run()
         testDb.query('DELETE FROM tasks').run()
+        testDb.query('DELETE FROM users').run()
         testDb.query('DELETE FROM sqlite_sequence WHERE name="tasks"').run()
+        testDb.query('DELETE FROM sqlite_sequence WHERE name="users"').run()
 
         // Seed fresh test data for each test
         seedTestData(testDb)
@@ -113,9 +133,10 @@ describe('Tasks API', () => {
                 due_date: '2024-01-30T18:00:00Z'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(newTask)
             })
 
@@ -132,9 +153,10 @@ describe('Tasks API', () => {
                 description: 'Just title and description'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(newTask)
             })
 
@@ -150,9 +172,10 @@ describe('Tasks API', () => {
                 description: 'Missing title'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(invalidTask)
             })
 
@@ -168,9 +191,10 @@ describe('Tasks API', () => {
                 title: 'Missing description'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(invalidTask)
             })
 
@@ -188,9 +212,10 @@ describe('Tasks API', () => {
                 status: 'invalid_status'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(invalidTask)
             })
 
@@ -208,9 +233,10 @@ describe('Tasks API', () => {
                 priority: 'invalid_priority'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(invalidTask)
             })
 
@@ -222,9 +248,10 @@ describe('Tasks API', () => {
         })
 
         test("should return 400 when request body is empty", async () => {
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({})
             })
 
@@ -232,13 +259,60 @@ describe('Tasks API', () => {
         })
 
         test("should return 400 when Content-Type is not JSON", async () => {
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
+                headers: { ...headers, 'Content-Type': 'text/plain' },
                 body: 'not json'
             })
 
             expect(response.status).toBe(400)
+        })
+
+        test("should create task and assign to authenticated user", async () => {
+            const headers = await createUserHeaders()
+            const newTask = {
+                title: 'Authenticated user task',
+                description: 'This task should be assigned to the authenticated user'
+            }
+
+            const response = await app.request('/api/tasks', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(newTask)
+            })
+
+            expect(response.status).toBe(201)
+
+            // Verify task was created with user_id
+            const tasksResponse = await app.request('/api/tasks')
+            const tasks = await tasksResponse.json()
+            const createdTask = tasks.data.find((t: any) => t.title === newTask.title)
+            expect(createdTask).toBeDefined()
+            expect(createdTask.user_id).toBe(2) // Test user ID
+        })
+
+        test("should create task and assign to authenticated admin", async () => {
+            const headers = await createAdminHeaders()
+            const newTask = {
+                title: 'Admin task',
+                description: 'This task should be assigned to the admin'
+            }
+
+            const response = await app.request('/api/tasks', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(newTask)
+            })
+
+            expect(response.status).toBe(201)
+
+            // Verify task was created with admin user_id
+            const tasksResponse = await app.request('/api/tasks')
+            const tasks = await tasksResponse.json()
+            const createdTask = tasks.data.find((t: any) => t.title === newTask.title)
+            expect(createdTask).toBeDefined()
+            expect(createdTask.user_id).toBe(1) // Admin user ID
         })
     })
 
@@ -285,9 +359,10 @@ describe('Tasks API', () => {
                 priority: 'high'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks/1', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(updateData)
             })
 
@@ -307,9 +382,11 @@ describe('Tasks API', () => {
                 status: 'completed'
             }
 
+            // Task 2 belongs to admin; use admin token for partial update
+            const headers = await createAdminHeaders()
             const response = await app.request('/api/tasks/2', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(partialUpdate)
             })
 
@@ -325,9 +402,10 @@ describe('Tasks API', () => {
                 priority: 'low'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks/1', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(priorityUpdate)
             })
 
@@ -342,9 +420,10 @@ describe('Tasks API', () => {
                 title: 'Updated title'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks/999', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(updateData)
             })
 
@@ -360,9 +439,10 @@ describe('Tasks API', () => {
                 title: 'Updated title'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks/invalid-id', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(updateData)
             })
 
@@ -378,9 +458,10 @@ describe('Tasks API', () => {
                 status: 'invalid_status'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks/1', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(invalidUpdate)
             })
 
@@ -396,9 +477,10 @@ describe('Tasks API', () => {
                 priority: 'invalid_priority'
             }
 
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks/1', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(invalidUpdate)
             })
 
@@ -410,9 +492,10 @@ describe('Tasks API', () => {
         })
 
         test("should return 400 when request body is empty", async () => {
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks/1', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({})
             })
 
@@ -421,12 +504,90 @@ describe('Tasks API', () => {
             const data = await response.json()
             expect(data).toHaveProperty('error')
         })
+
+        test("should allow user to update own task", async () => {
+            const headers = await createUserHeaders()
+            const updateData = {
+                title: 'Updated by owner',
+                status: 'completed'
+            }
+
+            // Task 1 belongs to user ID 2 (test user)
+            const response = await app.request('/api/tasks/1', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify(updateData)
+            })
+
+            expect(response.status).toBe(200)
+            const data = await response.json()
+            expect(data.title).toBe(updateData.title)
+            expect(data.status).toBe(updateData.status)
+        })
+
+        test("should prevent user from updating another user's task", async () => {
+            const headers = await createUserHeaders()
+            const updateData = {
+                title: 'Trying to update admin task'
+            }
+
+            // Task 2 belongs to admin (user ID 1), test user shouldn't be able to update it
+            const response = await app.request('/api/tasks/2', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify(updateData)
+            })
+
+            expect(response.status).toBe(403)
+            const data = await response.json()
+            expect(data).toHaveProperty('error')
+            expect(data.error).toContain('own tasks')
+        })
+
+        test("should allow admin to update any task", async () => {
+            const headers = await createAdminHeaders()
+            const updateData = {
+                title: 'Admin can update anything',
+                status: 'in_progress'
+            }
+
+            // Task 1 belongs to regular user, but admin should be able to update it
+            const response = await app.request('/api/tasks/1', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify(updateData)
+            })
+
+            expect(response.status).toBe(200)
+            const data = await response.json()
+            expect(data.title).toBe(updateData.title)
+        })
+
+        test("should allow updating legacy task without owner", async () => {
+            const headers = await createUserHeaders()
+            const updateData = {
+                title: 'Updated legacy task'
+            }
+
+            // Task 3 has user_id = null (legacy task) – now disallowed for non-admin
+            const response = await app.request('/api/tasks/3', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify(updateData)
+            })
+
+            expect(response.status).toBe(403)
+            const data = await response.json()
+            expect(data).toHaveProperty('error')
+        })
     })
 
     describe("DELETE /api/tasks/:id", () => {
         test("should delete a task successfully", async () => {
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks/1', {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers
             })
 
             expect(response.status).toBe(200)
@@ -437,8 +598,10 @@ describe('Tasks API', () => {
         })
 
         test("should return 404 for non-existent task ID", async () => {
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks/999', {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers
             })
 
             expect(response.status).toBe(404)
@@ -449,8 +612,10 @@ describe('Tasks API', () => {
         })
 
         test("should return 400 for invalid task ID format", async () => {
+            const headers = await createUserHeaders()
             const response = await app.request('/api/tasks/invalid-id', {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers
             })
 
             expect(response.status).toBe(400)
@@ -462,14 +627,78 @@ describe('Tasks API', () => {
 
         test("should confirm task is actually deleted", async () => {
             // First delete the task
+            // Legacy task without owner: only admin can delete in strict RBAC
+            const headers = await createAdminHeaders()
             const deleteResponse = await app.request('/api/tasks/3', {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers
             })
             expect(deleteResponse.status).toBe(200)
 
             // Then try to get it - should return 404
             const getResponse = await app.request('/api/tasks/3')
             expect(getResponse.status).toBe(404)
+        })
+
+        test("should allow user to delete own task", async () => {
+            const headers = await createUserHeaders()
+
+            // Task 1 belongs to user ID 2 (test user)
+            const response = await app.request('/api/tasks/1', {
+                method: 'DELETE',
+                headers
+            })
+
+            expect(response.status).toBe(200)
+            const data = await response.json()
+            expect(data.message).toContain('deleted')
+
+            // Verify task is actually deleted
+            const getResponse = await app.request('/api/tasks/1')
+            expect(getResponse.status).toBe(404)
+        })
+
+        test("should prevent user from deleting another user's task", async () => {
+            const headers = await createUserHeaders()
+
+            // Task 2 belongs to admin (user ID 1), test user shouldn't be able to delete it
+            const response = await app.request('/api/tasks/2', {
+                method: 'DELETE',
+                headers
+            })
+
+            expect(response.status).toBe(403)
+            const data = await response.json()
+            expect(data).toHaveProperty('error')
+            expect(data.error).toContain('own tasks')
+        })
+
+        test("should allow admin to delete any task", async () => {
+            const headers = await createAdminHeaders()
+
+            // Task 4 belongs to regular user, but admin should be able to delete it
+            const response = await app.request('/api/tasks/4', {
+                method: 'DELETE',
+                headers
+            })
+
+            expect(response.status).toBe(200)
+            const data = await response.json()
+            expect(data.message).toContain('deleted')
+        })
+
+        test("should allow deleting legacy task without owner", async () => {
+            const headers = await createUserHeaders()
+
+            // Task 3 has user_id = null (legacy task) – now disallowed for non-admin
+            const response = await app.request('/api/tasks/3', {
+                method: 'DELETE',
+                headers
+            })
+
+            expect(response.status).toBe(403)
+            const data = await response.json()
+            expect(data).toHaveProperty('error')
         })
     })
 

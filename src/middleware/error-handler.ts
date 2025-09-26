@@ -1,7 +1,7 @@
 // src/middleware/error-handler.ts
 import type { Context, Next } from 'hono'
 import { logger } from '@/utils/logger'
-import { toErrorResponse } from '@/errors'
+import { toErrorResponse } from '@/utils/errors'
 
 const getRequestId = (c: Context) => {
   const incoming = c.req.header('x-request-id')

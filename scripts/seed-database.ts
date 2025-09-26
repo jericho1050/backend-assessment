@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
-import { db } from '@/db/database'
-import { runMigrations } from '@/db/migrate'
+import { db } from '../src/db/database'
+import { runMigrations } from '../src/db/migrate'
 
 const seedData = () => {
     console.log('🌱 Seeding database...')

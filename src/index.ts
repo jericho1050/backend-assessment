@@ -1,10 +1,10 @@
 import { Hono } from 'hono'
 import tasks from '@/routes/tasks'
+import auth from '@/routes/auth'
 import { globalErrorHandler, requestContext } from './middleware/error-handler'
 import { logger } from './utils/logger'
 
 const app = new Hono().basePath('/api')
-
 
 // Request context middleware / correlation id
 app.use('*', requestContext)
@@ -24,8 +24,11 @@ app.use('*', async (c, next) => {
   })
 })
 
+// Routes
 app.route('/', tasks)
+app.route('/auth', auth)
 
+// Error handler
 app.onError(globalErrorHandler)
 
 

@@ -5,6 +5,7 @@
     "db:setup": "bun run src/db/setup.ts",
     "db:migrate": "bun run src/db/setup.ts",
     "db:seed": "bun run scripts/seed-database.ts",
+    "create-admin": "bun run scripts/create-admin.ts",
     "test": "bun test",
     "test:watch": "bun test --watch"
   },

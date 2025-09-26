@@ -1,24 +1,33 @@
 import { Hono } from 'hono'
 import { createTask, getTaskById, getTasks, updateTask, deleteTask } from '@/db/queries/tasks'
-import { taskSchema, taskQuerySchema } from '@/validators/tasks'
-import { ValidationError, NotFoundError } from '@/errors'
+import {
+  taskSchema,
+  taskQuerySchema,
+  createTaskSchema,
+  updateTaskSchema,
+  taskWithMetadataSchema
+} from '@/validators/tasks'
+import { ValidationError, NotFoundError, ForbiddenError } from '@/utils/errors'
+import { optionalAuthMiddleware, requireAuth } from '@/middleware/auth'
 
 const app = new Hono()
 
-app.get("/tasks", async (c) => {
+// GET /tasks - Public access with optional auth
+app.get("/tasks", optionalAuthMiddleware, async (c) => {
     const query = c.req.query()
-    try {
-        const validQuery = taskQuerySchema.parse(query)
-        const tasks = await getTasks(validQuery)
-        return c.json(tasks)
-    } catch (error) {
-        // If validation fails, return empty array for invalid filters
+
+    // Be tolerant with query parsing; for invalid filters return empty dataset
+    const parsed = taskQuerySchema.safeParse(query)
+    if (!parsed.success) {
         return c.json({ data: [], total: 0, page: 1, limit: 10, totalPages: 1 })
     }
+
+    const tasks = await getTasks(parsed.data as any)
+    return c.json(tasks)
 })
 
-
-app.get("/tasks/:id", async (c) => {
+// GET /tasks/:id - Public access with optional auth
+app.get("/tasks/:id", optionalAuthMiddleware, async (c) => {
     const { id } = c.req.param()
 
     // Validate ID is numeric
@@ -35,7 +44,9 @@ app.get("/tasks/:id", async (c) => {
 })
 
 
-app.post("/tasks", async (c) => {
+// POST /tasks - Require authentication (admin or user)
+app.post("/tasks", requireAuth(['admin', 'user']), async (c) => {
+
     // Handle JSON parsing errors
     let data
     try {
@@ -75,14 +86,23 @@ app.post("/tasks", async (c) => {
         throw new ValidationError('Invalid priority value. Must be one of: low, medium, high')
     }
 
-    // Use schema for full validation
-    const validData = taskSchema.parse(data)
-    await createTask(validData)
+    // Use schema for validation
+    const validData = createTaskSchema.parse(data)
+
+    // Assign to authenticated user
+    const userId = (c.get as any)('userId') as string
+    const taskData = {
+        ...validData,
+        user_id: parseInt(userId)
+    }
+
+    await createTask(taskData as any)
     return c.json({ message: "Task created successfully" }, 201)
 })
 
 
-app.put("/tasks/:id", async (c) => {
+// PUT /tasks/:id - Require authentication + ownership (admin can update any)
+app.put("/tasks/:id", requireAuth(['admin', 'user']), async (c) => {
     const { id } = c.req.param()
 
     // Validate ID is numeric
@@ -90,10 +110,21 @@ app.put("/tasks/:id", async (c) => {
         throw new ValidationError('Invalid ID format')
     }
 
-    // Check if task exists
+    // Check if task exists (already done in checkTaskOwnership middleware)
     const existingTask = await getTaskById(id)
     if (!existingTask) {
         throw new NotFoundError('Task not found')
+    }
+
+    // Enforce ownership
+    const userId = (c.get as any)('userId') as string
+    const userRole = (c.get as any)('userRole') as string
+
+    const ownerId = (existingTask as any).user_id as number | null
+    if (userRole !== 'admin') {
+        if (ownerId === null || ownerId !== parseInt(userId)) {
+            throw new ForbiddenError('You can only update your own tasks')
+        }
     }
 
     // Handle JSON parsing errors
@@ -131,26 +162,29 @@ app.put("/tasks/:id", async (c) => {
         throw new ValidationError('Invalid priority value. Must be one of: low, medium, high')
     }
 
+    // Use partial update schema for validation
+    const validData = updateTaskSchema.parse(data)
+
     // Create update object with existing values as defaults
     const updateData = {
-        title: data.title || (existingTask as any).title,
-        description: data.description || (existingTask as any).description,
-        status: data.status || (existingTask as any).status,
-        priority: data.priority || (existingTask as any).priority,
-        due_date: data.due_date !== undefined ? data.due_date : (existingTask as any).due_date
+        title: validData.title || (existingTask as any).title,
+        description: validData.description || (existingTask as any).description,
+        status: validData.status || (existingTask as any).status,
+        priority: validData.priority || (existingTask as any).priority,
+        due_date: validData.due_date !== undefined ? validData.due_date : (existingTask as any).due_date
     }
 
     // Validate the complete update data
-    const validData = taskSchema.parse(updateData)
-    await updateTask(id, validData)
+    const fullUpdateData = taskSchema.parse(updateData)
+    await updateTask(id, { ...fullUpdateData, user_id: (existingTask as any).user_id })
 
     // Return the updated task
     const updatedTask = await getTaskById(id)
     return c.json(updatedTask)
 })
 
-
-app.delete("/tasks/:id", async (c) => {
+// DELETE /tasks/:id - Require authentication + ownership (admin can delete any)
+app.delete("/tasks/:id", requireAuth(['admin', 'user']), async (c) => {
     const { id } = c.req.param()
 
     // Validate ID is numeric
@@ -158,10 +192,20 @@ app.delete("/tasks/:id", async (c) => {
         throw new ValidationError('Invalid ID format')
     }
 
-    // Check if task exists
+    // Check if task exists (already done in checkTaskOwnership middleware)
     const existingTask = await getTaskById(id)
     if (!existingTask) {
         throw new NotFoundError('Task not found')
+    }
+
+    // Enforce ownership
+    const userId = (c.get as any)('userId') as string
+    const userRole = (c.get as any)('userRole') as string
+    const ownerId = (existingTask as any).user_id as number | null
+    if (userRole !== 'admin') {
+        if (ownerId === null || ownerId !== parseInt(userId)) {
+            throw new ForbiddenError('You can only delete your own tasks')
+        }
     }
 
     await deleteTask(id)
