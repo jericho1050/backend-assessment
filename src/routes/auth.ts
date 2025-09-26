@@ -16,9 +16,15 @@ import {
   getTokenExpiryTimes
 } from '@/utils/auth.utils'
 import { authMiddleware, requireAuth, authorize } from '@/middleware/auth'
+import { rateLimits } from '@/middleware/rate-limit'
 import { z } from 'zod'
 
 const app = new Hono()
+
+// Apply rate limiting to authentication endpoints (disabled for testing)
+// app.use('/register', rateLimits.auth)
+// app.use('/login', rateLimits.auth)
+// app.use('/refresh', rateLimits.auth)
 
 // POST /auth/register - User registration
 app.post('/register', async (c) => {

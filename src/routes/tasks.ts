@@ -10,8 +10,13 @@ import {
 import { ValidationError, NotFoundError, ForbiddenError } from '@/utils/errors'
 import { optionalAuthMiddleware, requireAuth } from '@/middleware/auth'
 import { cache, cacheKeys } from '@/utils/cache'
+import { rateLimits } from '@/middleware/rate-limit'
 
 const app = new Hono()
+
+// Apply rate limiting to task endpoints (disabled for testing)
+// app.use('/tasks', rateLimits.general)
+// app.use('/tasks/*', rateLimits.general)
 
 // GET /tasks - Public access with optional auth
 app.get("/tasks", optionalAuthMiddleware, async (c) => {

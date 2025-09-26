@@ -48,9 +48,12 @@ export class NotFoundError extends AppError {
     super('NOT_FOUND', message, 404)
   }
 }
-export class RateLimitedError extends AppError {
-  constructor(message = 'Too Many Requests') {
+export class RateLimitError extends AppError {
+  constructor(message = 'Too Many Requests', details?: any) {
     super('RATE_LIMITED', message, 429)
+    if (details) {
+      this.details = [{ field: 'rateLimit', message: JSON.stringify(details) }]
+    }
   }
 }
 
