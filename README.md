@@ -58,6 +58,16 @@ Notes:
 - Uses SQLite via Bun; respects `LIB_DB_PATH` env var.
 - Transactions implement availability checks and rollback-on-failure.
 
+## Caching Strategy (Task 6.1)
+
+- Module: `src/utils/cache.ts` (in-memory TTL with pluggable interface)
+- Integration: `GET /api/tasks`, `GET /api/tasks/:id` with parameterized keys
+- Docs: `docs/caching.md`
+
+Notes:
+- `X-Cache: HIT|MISS` and `Cache-Control` headers added
+- Short TTLs; item cache invalidated on update/delete
+
 ## API Endpoints
 
 ### Task Management (Public)
