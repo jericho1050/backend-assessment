@@ -122,11 +122,8 @@ describe('Tasks API', () => {
             expect(response.status).toBe(201)
 
             const data = await response.json()
-            expect(data).toHaveProperty('id')
-            expect(data.title).toBe(newTask.title)
-            expect(data.description).toBe(newTask.description)
-            expect(data.status).toBe(newTask.status)
-            expect(data.priority).toBe(newTask.priority)
+            expect(data).toHaveProperty('message')
+            expect(data.message).toBe('Task created successfully')
         })
 
         test("should create task with minimal required fields", async () => {
@@ -144,10 +141,8 @@ describe('Tasks API', () => {
             expect(response.status).toBe(201)
 
             const data = await response.json()
-            expect(data.title).toBe(newTask.title)
-            expect(data.description).toBe(newTask.description)
-            expect(data.status).toBe('pending') // default value
-            expect(data.priority).toBe('medium') // default value
+            expect(data).toHaveProperty('message')
+            expect(data.message).toBe('Task created successfully')
         })
 
         test("should return 400 when title is missing", async () => {

@@ -1,5 +1,6 @@
 import { db } from "@/db/database"
-import { Task, TaskQuery } from "@/types"
+import { Task, TaskQuery } from "@/types/inferred"
+import { toIso } from "@/utils"
 
 export const getTasks = async (query: TaskQuery) => {
     // pagination, sorting, filtering
@@ -35,7 +36,7 @@ export const getTasks = async (query: TaskQuery) => {
     const rowsStmt = db.query(`SELECT * FROM tasks ${whereSql} ORDER BY ${orderBy} DESC LIMIT ? OFFSET ?`)
 
     const rows = rowsStmt.all(...params, limit, offset) as Task[]
-    
+
     const totalPages = Math.ceil(total / limit) || 1
 
     return { data: rows, total, page: Number(page), limit: Number(limit), totalPages }
@@ -48,15 +49,16 @@ export const getTaskById = async (id: string) => {
 }
 
 export const createTask = async (newTask: Task) => {
+
     const stmt = db.query(
         "INSERT INTO tasks (title, description, status, priority, due_date) VALUES (?, ?, ?, ?, ?)"
     )
     return stmt.run(
         newTask.title,
         newTask.description,
-        newTask.status,
-        newTask.priority,
-        newTask.due_date.toISOString()
+        newTask.status ?? 'pending',
+        newTask.priority ?? 'medium',
+        toIso(newTask.due_date)
     )
 }
 
@@ -67,9 +69,9 @@ export const updateTask = async (id: string, updatedTask: Task) => {
     return stmt.run(
         updatedTask.title,
         updatedTask.description,
-        updatedTask.status,
-        updatedTask.priority,
-        updatedTask.due_date.toISOString(),
+        updatedTask.status ?? 'pending',
+        updatedTask.priority ?? 'medium',
+        toIso(updatedTask.due_date),
         id
     )
 }
