@@ -1,140 +1,21 @@
-# ===============================================
-# docker-compose.yml
-# Full stack for local development
-# ===============================================
-
+# Simple docker-compose.yml for MyCure Backend Assessment
 version: '3.9'
 
 services:
-  # MyCure Backend Assessment API
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-      target: development
+    build: .
     container_name: mycure-api
     restart: unless-stopped
     environment:
-      NODE_ENV: ${NODE_ENV:-development}
-      PORT: ${PORT:-3000}
-      # Database
+      NODE_ENV: production
+      PORT: 3000
       DATABASE_PATH: /app/data/mycure.db
-      # JWT
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-refresh-secret-change-in-production}
-      # CORS
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
-      # Rate Limiting
-      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-900000}
-      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
-      # Request Limits
-      MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-1048576}
-      MAX_JSON_SIZE: ${MAX_JSON_SIZE:-1048576}
-      # Logging
-      LOG_LEVEL: ${LOG_LEVEL:-info}
+      JWT_SECRET: your-secret-key-change-in-production
+      JWT_REFRESH_SECRET: your-refresh-secret-change-in-production
     volumes:
-      - ./src:/app/src:ro
-      - ./scripts:/app/scripts:ro
-      - ./package.json:/app/package.json:ro
-      - ./tsconfig.json:/app/tsconfig.json:ro
-      - ./bun.lock:/app/bun.lock:ro
       - api_data:/app/data
     ports:
-      - '${PORT:-3000}:3000'
-    networks:
-      - mycure-network
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # PostgreSQL Database (for future use)
-  postgres:
-    image: postgres:16-alpine
-    container_name: mycure-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-mycuredb}
-      POSTGRES_USER: ${POSTGRES_USER:-mycureuser}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mycurepass}
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./src/db/migrations:/docker-entrypoint-initdb.d
-    ports:
-      - '${POSTGRES_PORT:-5432}:5432'
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-mycureuser}']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - mycure-network
-    profiles:
-      - postgres
-
-  # Redis Cache (for future use)
-  redis:
-    image: redis:7-alpine
-    container_name: mycure-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispass}
-    volumes:
-      - redis_data:/data
-    ports:
-      - '${REDIS_PORT:-6379}:6379'
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - mycure-network
-    profiles:
-      - redis
-
-  # pgAdmin (optional, for database management)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: mycure-pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
-    ports:
-      - '${PGADMIN_PORT:-5050}:80'
-    depends_on:
-      - postgres
-    networks:
-      - mycure-network
-    profiles:
-      - tools
-
-  # Redis Commander (optional, for Redis management)
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    container_name: mycure-redis-commander
-    restart: unless-stopped
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass}
-    ports:
-      - '${REDIS_COMMANDER_PORT:-8081}:8081'
-    depends_on:
-      - redis
-    networks:
-      - mycure-network
-    profiles:
-      - tools
-
-networks:
-  mycure-network:
-    driver: bridge
+      - "3000:3000"
 
 volumes:
-  postgres_data:
-  redis_data:
   api_data:
