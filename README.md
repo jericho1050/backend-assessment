@@ -58,6 +58,19 @@ Notes:
 - Uses SQLite via Bun; respects `LIB_DB_PATH` env var.
 - Transactions implement availability checks and rollback-on-failure.
 
+## Library Performance Optimization (Task 6.2)
+
+- Performance Analysis: `docs/library-performance.md`
+- Additional Indexes: `src/db/migrations/004-library-performance-indexes.sql`
+- Optimized Queries: `src/db/queries/library-optimized-queries.sql`
+
+Key optimizations:
+- Partial indexes for active borrowings and overdue books
+- Materialized views for popular books and revenue reports
+- N+1 query solutions with eager loading and batch patterns
+- Full-text search capabilities for book discovery
+- Archive strategies for historical data management
+
 ## Caching Strategy (Task 6.1)
 
 - Module: `src/utils/cache.ts` (in-memory TTL with pluggable interface)

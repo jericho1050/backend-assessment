@@ -109,6 +109,12 @@ BEGIN
   UPDATE books
   SET available_copies = available_copies - 1
   WHERE id = NEW.book_id AND available_copies > 0;
+
+  -- Ensure the decrement actually happened; otherwise, rollback
+  SELECT CASE
+    WHEN (SELECT available_copies FROM books WHERE id = NEW.book_id) < 0 THEN
+      RAISE(ABORT, 'No available copies for this book')
+  END;
 END;
 
 -- Increment available_copies on return

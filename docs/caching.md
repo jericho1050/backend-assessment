@@ -31,4 +31,3 @@ Key construction for lists sorts query params and encodes values for stable keys
 ### Redis Adapter (Future)
 - Implement `CacheClient` with Redis and swap via DI/env flag. Use `EX` for TTLs and `DEL` for invalidation; consider tags using Redis sets or keyspace notifications.
 
-
