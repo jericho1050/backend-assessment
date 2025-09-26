@@ -40,6 +40,15 @@ This repository also includes a standalone Library Management System schema as p
 
 Note: The schema is intentionally not wired into app migrations to avoid impacting the existing Task app tables.
 
+## Library Complex Queries (Task 2.2)
+
+The following complex queries accompany the library schema:
+
+- SQL: `src/db/queries/library-queries.sql`
+- Docs: `docs/library-queries.md`
+
+They include overdue books, popular books (6 months), user statistics, and a current-year revenue report.
+
 ## API Endpoints
 
 ### Task Management (Public)

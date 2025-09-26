@@ -128,4 +128,3 @@ BEGIN
   WHERE id = NEW.book_id;
 END;
 
-

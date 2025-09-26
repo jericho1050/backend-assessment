@@ -79,4 +79,3 @@ This file is standalone. To experiment locally in SQLite:
 
 Or copy the statements into your migration tool of choice if integrating into another project.
 
-
