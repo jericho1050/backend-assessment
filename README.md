@@ -31,6 +31,15 @@ Server will be available at <http://localhost:3000>
 - `bun run db:seed` - Seed database with sample tasks
 - `bun run create-admin` - Create admin and test users
 
+## Library Management Schema (Task 2.1)
+
+This repository also includes a standalone Library Management System schema as part of Issue #3 deliverables:
+
+- SQL file: `src/db/migrations/003-library-schema.sql` (standalone; not auto-applied)
+- Docs: `docs/library-schema.md` (design decisions and index strategy)
+
+Note: The schema is intentionally not wired into app migrations to avoid impacting the existing Task app tables.
+
 ## API Endpoints
 
 ### Task Management (Public)
