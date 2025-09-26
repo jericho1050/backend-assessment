@@ -1,0 +1,34 @@
+# ===============================================
+# monitoring/grafana/datasources/prometheus.yml
+# Grafana datasource configuration
+# ===============================================
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+
+  - name: PostgreSQL
+    type: postgres
+    url: postgres:5432
+    database: mycuredb
+    user: mycureuser
+    jsonData:
+      sslmode: 'disable'
+      postgresVersion: 1600
+    secureJsonData:
+      password: mycurepass
+
+  - name: Redis
+    type: redis-datasource
+    access: proxy
+    url: redis:6379
+    jsonData:
+      client: standalone
+    secureJsonData:
+      password: redispass

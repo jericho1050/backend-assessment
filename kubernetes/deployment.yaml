@@ -1,0 +1,160 @@
+# ===============================================
+# kubernetes/deployment.yaml
+# Kubernetes deployment manifest
+# ===============================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mycure-api
+  labels:
+    app: mycure-api
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mycure-api
+  template:
+    metadata:
+      labels:
+        app: mycure-api
+        version: v1
+    spec:
+      containers:
+      - name: api
+        image: ghcr.io/jericho1050/backend-assessment:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: PORT
+          value: "3000"
+        - name: DATABASE_PATH
+          value: "/app/data/mycure.db"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: mycure-api-secrets
+              key: jwt-secret
+        - name: JWT_REFRESH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: mycure-api-secrets
+              key: jwt-refresh-secret
+        - name: ALLOWED_ORIGINS
+          value: "https://api.example.com"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+      volumes:
+      - name: data
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mycure-api
+  labels:
+    app: mycure-api
+spec:
+  type: ClusterIP
+  selector:
+    app: mycure-api
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mycure-api-secrets
+type: Opaque
+stringData:
+  jwt-secret: "your-super-secret-jwt-key-change-this-in-production"
+  jwt-refresh-secret: "your-super-secret-refresh-key-change-this-in-production"
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mycure-api-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mycure-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mycure-api-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - api.example.com
+    secretName: mycure-api-tls
+  rules:
+  - host: api.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mycure-api
+            port:
+              number: 80
