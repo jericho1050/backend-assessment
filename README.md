@@ -35,8 +35,8 @@ Server will be available at <http://localhost:3000>
 
 This repository also includes a standalone Library Management System schema as part of Issue #3 deliverables:
 
-- SQL file: `src/db/migrations/003-library-schema.sql` (standalone; not auto-applied)
-- Docs: `docs/library-schema.md` (design decisions and index strategy)
+- SQL file: [`src/db/migrations/003-library-schema.sql`](src/db/migrations/003-library-schema.sql) (standalone; not auto-applied)
+- Docs: [`docs/library-schema.md`](docs/library-schema.md) (design decisions and index strategy)
 
 Note: The schema is intentionally not wired into app migrations to avoid impacting the existing Task app tables.
 
@@ -44,15 +44,15 @@ Note: The schema is intentionally not wired into app migrations to avoid impacti
 
 The following complex queries accompany the library schema:
 
-- SQL: `src/db/queries/library-queries.sql`
-- Docs: `docs/library-queries.md`
+- SQL: [`src/db/queries/library-queries.sql`](src/db/queries/library-queries.sql)
+- Docs: [`docs/library-queries.md`](docs/library-queries.md)
 
 They include overdue books, popular books (6 months), user statistics, and a current-year revenue report.
 
 ## Library DB Integration (Task 2.3)
 
-- Module: `src/db/library.ts` (connection, retries, prepared statements, transactions)
-- Docs: `docs/library-db.md`
+- Module: [`src/db/library.ts`](src/db/library.ts) (connection, retries, prepared statements, transactions)
+- Docs: [`docs/library-db.md`](docs/library-db.md)
 
 Notes:
 - Uses SQLite via Bun; respects `LIB_DB_PATH` env var.
@@ -60,9 +60,9 @@ Notes:
 
 ## Library Performance Optimization (Task 6.2)
 
-- Performance Analysis: `docs/library-performance.md`
-- Additional Indexes: `src/db/migrations/004-library-performance-indexes.sql`
-- Optimized Queries: `src/db/queries/library-optimized-queries.sql`
+- Performance Analysis: [`docs/library-performance.md`](docs/library-performance.md)
+- Additional Indexes: [`src/db/migrations/004-library-performance-indexes.sql`](src/db/migrations/004-library-performance-indexes.sql)
+- Optimized Queries: [`src/db/queries/library-optimized-queries.sql`](src/db/queries/library-optimized-queries.sql)
 
 Key optimizations:
 - Partial indexes for active borrowings and overdue books
@@ -73,9 +73,9 @@ Key optimizations:
 
 ## Caching Strategy (Task 6.1)
 
-- Module: `src/utils/cache.ts` (in-memory TTL with pluggable interface)
+- Module: [`src/utils/cache.ts`](src/utils/cache.ts) (in-memory TTL with pluggable interface)
 - Integration: `GET /api/tasks`, `GET /api/tasks/:id` with parameterized keys
-- Docs: `docs/caching.md`
+- Docs: [`docs/caching.md`](docs/caching.md)
 
 Notes:
 - `X-Cache: HIT|MISS` and `Cache-Control` headers added
@@ -195,3 +195,29 @@ After running `bun run create-admin`, the following test accounts are available:
 
 - **Admin**: `admin@example.com` / `admin123`
 - **User**: `user@example.com` / `user123`
+
+## Security Vulnerabilities Prevention (Task 7.1)
+
+Comprehensive security documentation covering prevention strategies for common web application vulnerabilities:
+
+- **SQL Injection Prevention**: Parameterized queries, input validation, ORM protection
+- **XSS Prevention**: Output encoding, CSP headers, input sanitization
+- **CSRF Prevention**: CSRF tokens, SameSite cookies, custom headers
+- **Rate Limiting**: IP/user-based limits, progressive delays, DDoS protection
+- **Password Security**: Strong hashing, complexity requirements, account lockout
+- **Security Headers**: Comprehensive header implementation
+- **Input Validation**: Zod schema validation strategies
+- **Logging & Monitoring**: Security event logging and monitoring
+- **Security Testing**: Automated security test methodologies
+- **Vulnerability Assessment**: Regular security audit procedures
+
+**Documentation**: [Security Vulnerabilities Prevention Guide](docs/security-vulnerabilities.md)
+
+**Features Implemented**:
+- ✅ Parameterized queries with prepared statements
+- ✅ Input validation using Zod schemas
+- ✅ Password hashing with bcrypt (12 rounds)
+- ✅ JWT-based authentication with secure token handling
+- ✅ Role-based access control with middleware
+- ✅ Request correlation IDs for audit trails
+- ✅ Comprehensive error handling without information leakage
