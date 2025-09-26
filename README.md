@@ -25,6 +25,20 @@ bun run dev
 
 Server will be available at <http://localhost:3000>
 
+## Testing
+
+Run tests:
+
+```sh
+bun test
+```
+
+Run tests in watch mode:
+
+```sh
+bun test:watch
+```
+
 ## Database Commands
 
 - `bun run db:migrate` - Run database migrations
@@ -36,7 +50,7 @@ Server will be available at <http://localhost:3000>
 This repository also includes a standalone Library Management System schema as part of Issue #3 deliverables:
 
 - SQL file: [`src/db/migrations/003-library-schema.sql`](src/db/migrations/003-library-schema.sql) (standalone; not auto-applied)
-- Docs: [`docs/library-schema.md`](docs/library-schema.md) (design decisions and index strategy)
+- Docs: [docs/library-schema.md](docs/library-schema.md) (design decisions and index strategy)
 
 Note: The schema is intentionally not wired into app migrations to avoid impacting the existing Task app tables.
 
@@ -45,14 +59,14 @@ Note: The schema is intentionally not wired into app migrations to avoid impacti
 The following complex queries accompany the library schema:
 
 - SQL: [`src/db/queries/library-queries.sql`](src/db/queries/library-queries.sql)
-- Docs: [`docs/library-queries.md`](docs/library-queries.md)
+- Docs: [docs/library-queries.md](docs/library-queries.md)
 
 They include overdue books, popular books (6 months), user statistics, and a current-year revenue report.
 
 ## Library DB Integration (Task 2.3)
 
 - Module: [`src/db/library.ts`](src/db/library.ts) (connection, retries, prepared statements, transactions)
-- Docs: [`docs/library-db.md`](docs/library-db.md)
+- Docs: [docs/library-db.md](docs/library-db.md)
 
 Notes:
 - Uses SQLite via Bun; respects `LIB_DB_PATH` env var.
@@ -60,7 +74,7 @@ Notes:
 
 ## Library Performance Optimization (Task 6.2)
 
-- Performance Analysis: [`docs/library-performance.md`](docs/library-performance.md)
+- Performance Analysis: [docs/library-performance.md](docs/library-performance.md)
 - Additional Indexes: [`src/db/migrations/004-library-performance-indexes.sql`](src/db/migrations/004-library-performance-indexes.sql)
 - Optimized Queries: [`src/db/queries/library-optimized-queries.sql`](src/db/queries/library-optimized-queries.sql)
 
@@ -75,7 +89,7 @@ Key optimizations:
 
 - Module: [`src/utils/cache.ts`](src/utils/cache.ts) (in-memory TTL with pluggable interface)
 - Integration: `GET /api/tasks`, `GET /api/tasks/:id` with parameterized keys
-- Docs: [`docs/caching.md`](docs/caching.md)
+- Docs: [docs/caching.md](docs/caching.md)
 
 Notes:
 - `X-Cache: HIT|MISS` and `Cache-Control` headers added
@@ -101,19 +115,9 @@ Notes:
 - `POST /api/auth/logout` - Logout
 - `GET /api/auth/users` - Get all users (admin only)
 
-## Testing
 
-Run tests:
 
-```sh
-bun test
-```
-
-Run tests in watch mode:
-
-```sh
-bun test:watch
-```
+## Authentication & Authorization (Task 3.1 & 3.2)
 
 ### User Roles
 
@@ -251,3 +255,48 @@ Comprehensive security measures implemented for the Task Management API:
 - [x] File upload validation with type and size restrictions
 - [x] Security event logging and monitoring
 - [x] Environment-specific security configurations
+
+## System Design & Architecture 
+
+Comprehensive system design documentation for enterprise-scale applications:
+
+### E-commerce Microservices Architecture (Task 8.1)
+**Documentation**: [docs/microservices-architecture.md](docs/microservices-architecture.md)
+
+A complete microservices architecture design for an e-commerce platform featuring:
+- **5 Core Services**: User, Product, Order, Payment, and Inventory services
+- **Service Communication**: REST APIs, Message Queues (RabbitMQ/Kafka), and Event-driven architecture
+- **Data Consistency**: Saga patterns, Event Sourcing, and CQRS implementation
+- **Resilience Patterns**: Circuit breakers, retry mechanisms, and graceful degradation
+- **Deployment**: Kubernetes-based deployment with auto-scaling and service mesh
+
+**Key Architecture Decisions**:
+- Domain-Driven Design with bounded contexts
+- Database per service pattern
+- API Gateway for unified entry point
+- Distributed tracing with correlation IDs
+- Multi-level caching strategy
+
+### Task Management API Scalability Planning (Task 8.2)
+**Documentation**: [docs/scalability-planning.md](docs/scalability-planning.md)
+
+Scalability strategy for handling 10,000+ concurrent users:
+- **Infrastructure Scaling**: Auto-scaling groups, load balancing, and geographic distribution
+- **Database Strategy**: PostgreSQL migration, read replicas, connection pooling, and sharding
+- **Caching Architecture**: Multi-level caching with CDN, Redis cluster, and application cache
+- **Performance Targets**: < 100ms p95 latency, 99.99% uptime
+- **Cost Optimization**: Spot instances, resource allocation tiers, and auto-scaling policies
+
+**Implementation Roadmap**:
+1. Foundation: Database migration and caching setup (Weeks 1-2)
+2. Scaling: Auto-scaling and read replicas (Weeks 3-4)
+3. Optimization: Query optimization and monitoring (Weeks 5-6)
+4. Resilience: Failover and disaster recovery (Weeks 7-8)
+
+### Architecture Diagrams
+
+Both documents include comprehensive Mermaid diagrams illustrating:
+- System architecture and component interactions
+- Data flow and communication patterns
+- Deployment topology and infrastructure
+- Scaling strategies and load distribution
