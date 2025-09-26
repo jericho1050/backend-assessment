@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import tasks from '@/routes/tasks'
 import auth from '@/routes/auth'
+import health from '@/routes/health'
 import { globalErrorHandler, requestContext } from './middleware/error-handler'
 import { logger } from './utils/logger'
 import { cors, getCorsConfig } from './middleware/cors'
@@ -41,6 +42,7 @@ app.use('*', async (c, next) => {
 // Routes
 app.route('/', tasks)
 app.route('/auth', auth)
+app.route('/health', health)
 
 // Error handler
 app.onError(globalErrorHandler)
