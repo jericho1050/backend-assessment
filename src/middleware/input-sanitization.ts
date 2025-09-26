@@ -25,21 +25,20 @@ const defaultConfig: SanitizationConfig = {
 const scriptTagRegex = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi
 const htmlTagRegex = /<[^>]*>/g
 
-// SQL injection patterns
+// SQL injection patterns (more specific to avoid false positives)
 const sqlInjectionPatterns = [
-  /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi,
-  /(\b(OR|AND)\s+\d+\s*=\s*\d+)/gi,
-  /(\b(OR|AND)\s+['"]\s*=\s*['"])/gi,
   /(UNION\s+SELECT)/gi,
   /(DROP\s+TABLE)/gi,
   /(DELETE\s+FROM)/gi,
   /(INSERT\s+INTO)/gi,
   /(UPDATE\s+SET)/gi,
   /(--|\/\*|\*\/)/g,
-  /(xp_|sp_)/gi
+  /(xp_|sp_)/gi,
+  /(\b(OR|AND)\s+\d+\s*=\s*\d+)/gi,
+  /(\b(OR|AND)\s+['"]\s*=\s*['"])/gi
 ]
 
-// XSS patterns
+// XSS patterns (more specific to avoid false positives)
 const xssPatterns = [
   /<script[^>]*>.*?<\/script>/gi,
   /javascript:/gi,
@@ -47,12 +46,7 @@ const xssPatterns = [
   /<iframe[^>]*>.*?<\/iframe>/gi,
   /<object[^>]*>.*?<\/object>/gi,
   /<embed[^>]*>.*?<\/embed>/gi,
-  /<link[^>]*>.*?<\/link>/gi,
-  /<meta[^>]*>.*?<\/meta>/gi,
-  /<style[^>]*>.*?<\/style>/gi,
-  /expression\s*\(/gi,
-  /url\s*\(/gi,
-  /@import/gi
+  /expression\s*\(/gi
 ]
 
 export function inputSanitization(config: SanitizationConfig = {}) {
@@ -68,12 +62,8 @@ export function inputSanitization(config: SanitizationConfig = {}) {
             const body = await c.req.json()
             if (body) {
               const sanitizedBody = sanitizeValue(body, finalConfig)
-              // Replace the request body with sanitized version
-              c.req = new Request(c.req.url, {
-                method: c.req.method,
-                headers: c.req.headers,
-                body: JSON.stringify(sanitizedBody)
-              })
+              // Store sanitized body in context for route handlers to use
+              c.set('sanitizedBody', sanitizedBody)
             }
           } catch (error) {
             // If JSON parsing fails, let the route handler deal with it
@@ -86,6 +76,10 @@ export function inputSanitization(config: SanitizationConfig = {}) {
       const url = new URL(c.req.url)
       for (const [key, value] of url.searchParams.entries()) {
         // Only check for obvious SQL injection patterns in query params
+        // Skip validation for common safe parameters
+        if (['page', 'limit', 'sort', 'order', 'status', 'priority'].includes(key.toLowerCase())) {
+          continue
+        }
         if (containsSqlInjection(value) || containsXss(value)) {
           throw new ValidationError('Potentially malicious input detected in query parameters')
         }

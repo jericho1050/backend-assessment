@@ -1,4 +1,6 @@
 # deps
 node_modules/
 *.db
+mycure.db
+
 

@@ -34,7 +34,7 @@ const defaultConfig: CorsConfig = {
   optionsSuccessStatus: 204
 }
 
-export function cors(config: CorsConfig = {}) {
+export function cors(config: Partial<CorsConfig> = {}) {
   const finalConfig = { ...defaultConfig, ...config }
 
   return async (c: Context, next: Next) => {
@@ -46,7 +46,7 @@ export function cors(config: CorsConfig = {}) {
       setCorsHeaders(c, origin, finalConfig)
       
       if (!finalConfig.preflightContinue) {
-        return c.text('', finalConfig.optionsSuccessStatus)
+        return c.text('', finalConfig.optionsSuccessStatus as any)
       }
     }
 

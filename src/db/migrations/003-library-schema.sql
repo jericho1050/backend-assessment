@@ -108,8 +108,7 @@ WHEN NEW.returned_date IS NULL
 BEGIN
   UPDATE books
   SET available_copies = available_copies - 1
-  WHERE id = NEW.book_id AND available_copies > 0;
-END;
+  WHERE id = NEW.book_id AND available_copies > 0;END;
 
 -- Increment available_copies on return
 CREATE TRIGGER IF NOT EXISTS trg_borrowings_increment_available

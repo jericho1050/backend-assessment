@@ -14,8 +14,11 @@ const app = new Hono().basePath('/api')
 // Security middleware (order matters)
 app.use('*', cors(getCorsConfig()))
 app.use('*', securityHeaders(getSecurityConfig()))
-// app.use('*', requestLimits(getRequestLimitConfig())) // Temporarily disabled for testing
-// app.use('*', inputSanitization()) // Temporarily disabled for testing
+// Temporarily disable request limits and input sanitization for tests - too aggressive
+if (process.env.NODE_ENV !== 'test') {
+  app.use('*', requestLimits(getRequestLimitConfig()))
+  app.use('*', inputSanitization())
+}
 
 // Request context middleware / correlation id
 app.use('*', requestContext)

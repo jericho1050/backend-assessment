@@ -14,9 +14,9 @@ import { rateLimits } from '@/middleware/rate-limit'
 
 const app = new Hono()
 
-// Apply rate limiting to task endpoints (disabled for testing)
-// app.use('/tasks', rateLimits.general)
-// app.use('/tasks/*', rateLimits.general)
+// Apply rate limiting to task endpoints
+app.use('/tasks', rateLimits.general)
+app.use('/tasks/*', rateLimits.general)
 
 // GET /tasks - Public access with optional auth
 app.get("/tasks", optionalAuthMiddleware, async (c) => {

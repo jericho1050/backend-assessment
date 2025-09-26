@@ -100,7 +100,7 @@ export const updateUser = async (userId: number, updateData: UpdateUserDto): Pro
   }
 
   const setClause = fields.map(field => `${field} = ?`).join(', ')
-  const values = fields.map(field => updateData[field as keyof UpdateUserDto])
+  const values = fields.map(field => updateData[field as keyof UpdateUserDto]).filter(v => v !== undefined)
 
   const stmt = db.query(`
     UPDATE users

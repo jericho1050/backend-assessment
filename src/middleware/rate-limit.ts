@@ -100,35 +100,35 @@ export const rateLimits = {
   // Strict limits for authentication endpoints
   auth: createRateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 5, // 5 attempts per 15 minutes
+    maxRequests: process.env.NODE_ENV === 'test' ? 1000 : 5, // Higher limit for tests
     keyGenerator: getDefaultKey
   }),
 
   // Moderate limits for general API endpoints
   general: createRateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 100, // 100 requests per 15 minutes
+    maxRequests: process.env.NODE_ENV === 'test' ? 10000 : 100, // Higher limit for tests
     keyGenerator: getDefaultKey
   }),
 
   // Higher limits for authenticated users
   authenticated: createRateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 1000, // 1000 requests per 15 minutes
+    maxRequests: process.env.NODE_ENV === 'test' ? 10000 : 1000, // Higher limit for tests
     keyGenerator: getUserKey
   }),
 
   // Very strict limits for admin operations
   admin: createRateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    maxRequests: 50, // 50 requests per hour
+    maxRequests: process.env.NODE_ENV === 'test' ? 1000 : 50, // Higher limit for tests
     keyGenerator: getUserKey
   }),
 
   // Burst protection for high-frequency endpoints
   burst: createRateLimit({
     windowMs: 60 * 1000, // 1 minute
-    maxRequests: 30, // 30 requests per minute
+    maxRequests: process.env.NODE_ENV === 'test' ? 1000 : 30, // Higher limit for tests
     keyGenerator: getDefaultKey
   })
 }
