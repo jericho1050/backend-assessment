@@ -4,22 +4,21 @@
 
 ### 1. Prerequisites
 - Docker Engine 20.0+
-- Docker Compose 2.0+
 
 ### 2. Deploy the Application
 
 ```bash
-# Build and start the application
-docker-compose up -d
+# Build the Docker image
+docker build -t mycure-backend .
+
+# Run the container
+docker run -d -p 3000:3000 --name mycure-api mycure-backend
 
 # View logs
-docker-compose logs -f
+docker logs -f mycure-api
 
-# Run database migrations
-docker-compose exec api bun run db:migrate
-
-# Create admin user
-docker-compose exec api bun run create-admin
+# Create admin user (optional)
+docker exec mycure-api bun run create-admin
 ```
 
 ### 3. Access the API
@@ -30,20 +29,28 @@ docker-compose exec api bun run create-admin
 ## Basic Commands
 
 ```bash
-# Start the application
-docker-compose up -d
+# Build the image
+docker build -t mycure-backend .
 
-# Stop the application
-docker-compose down
+# Run the container
+docker run -d -p 3000:3000 --name mycure-api mycure-backend
+
+# Stop the container
+docker stop mycure-api
+
+# Remove the container
+docker rm mycure-api
 
 # View logs
-docker-compose logs -f
+docker logs -f mycure-api
 
 # Run commands in the container
-docker-compose exec api sh
+docker exec -it mycure-api sh
 
 # Rebuild and restart
-docker-compose up -d --build
+docker stop mycure-api && docker rm mycure-api
+docker build -t mycure-backend .
+docker run -d -p 3000:3000 --name mycure-api mycure-backend
 ```
 
 ## Environment Variables
@@ -62,9 +69,9 @@ The application uses these environment variables:
 
 ### Common Issues
 
-1. **Port already in use**: Change the port in docker-compose.yml
-2. **Database issues**: Check logs with `docker-compose logs api`
-3. **Build failures**: Rebuild with `docker-compose build --no-cache`
+1. **Port already in use**: Change the port in the docker run command (e.g., `-p 3001:3000`)
+2. **Database issues**: Check logs with `docker logs mycure-api`
+3. **Build failures**: Rebuild with `docker build --no-cache -t mycure-backend .`
 
 ### Health Check
 
@@ -77,8 +84,7 @@ curl http://localhost:3000/api/health
 
 ```
 .
-├── Dockerfile          # Simple container build
-├── docker-compose.yml  # Basic deployment config
+├── Dockerfile          # Container build configuration
 ├── .dockerignore       # Build optimization
-└── .env.docker         # Environment template
+└── env.docker          # Environment template
 ```
