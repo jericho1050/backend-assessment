@@ -13,8 +13,8 @@ const dateString = z.preprocess((v) => {
 export const taskSchema = z.object({
   title: z.string().min(1).max(100),
   description: z.string().max(500),
-  status: z.enum(['pending', 'in_progress', 'completed']),
-  priority: z.enum(['low', 'medium', 'high']),
+  status: z.enum(['pending', 'in_progress', 'completed']).optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
   due_date: dateString.optional() // will be null | string when present
 })
 
