@@ -47,4 +47,3 @@ await libraryDb.borrowBook(1, 42, '2025-12-31')
 await libraryDb.returnBook(10, 350) // 3.50 fine
 ```
 
-

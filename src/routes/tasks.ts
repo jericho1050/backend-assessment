@@ -9,6 +9,7 @@ import {
 } from '@/validators/tasks'
 import { ValidationError, NotFoundError, ForbiddenError } from '@/utils/errors'
 import { optionalAuthMiddleware, requireAuth } from '@/middleware/auth'
+import { cache, cacheKeys } from '@/utils/cache'
 
 const app = new Hono()
 
@@ -22,8 +23,20 @@ app.get("/tasks", optionalAuthMiddleware, async (c) => {
         return c.json({ data: [], total: 0, page: 1, limit: 10, totalPages: 1 })
     }
 
+    const key = cacheKeys.tasksList(parsed.data as any)
+    const cached = await cache.get(key)
+    if (cached) {
+        c.header('X-Cache', 'HIT')
+        c.header('Cache-Control', 'public, max-age=30')
+        return c.body(cached, 200)
+    }
+
     const tasks = await getTasks(parsed.data as any)
-    return c.json(tasks)
+    const payload = JSON.stringify(tasks)
+    await cache.set(key, payload, 30) // 30s TTL for list queries
+    c.header('X-Cache', 'MISS')
+    c.header('Cache-Control', 'public, max-age=30')
+    return c.body(payload, 200)
 })
 
 // GET /tasks/:id - Public access with optional auth
@@ -35,12 +48,24 @@ app.get("/tasks/:id", optionalAuthMiddleware, async (c) => {
         throw new ValidationError('Invalid ID format')
     }
 
+    const key = cacheKeys.taskById(id)
+    const cached = await cache.get(key)
+    if (cached) {
+        c.header('X-Cache', 'HIT')
+        c.header('Cache-Control', 'public, max-age=60')
+        return c.body(cached, 200)
+    }
+
     const task = await getTaskById(id)
     if (!task) {
         throw new NotFoundError('Task not found')
     }
 
-    return c.json(task)
+    const payload = JSON.stringify(task)
+    await cache.set(key, payload, 60) // 60s TTL for item
+    c.header('X-Cache', 'MISS')
+    c.header('Cache-Control', 'public, max-age=60')
+    return c.body(payload, 200)
 })
 
 
@@ -97,6 +122,12 @@ app.post("/tasks", requireAuth(['admin', 'user']), async (c) => {
     }
 
     await createTask(taskData as any)
+    
+    // Invalidate list caches on task creation
+    // Clear common list cache patterns to ensure new tasks appear
+    const { cache } = await import('@/utils/cache')
+    cache.clearPattern('tasks:list:*')
+    
     return c.json({ message: "Task created successfully" }, 201)
 })
 
@@ -177,9 +208,13 @@ app.put("/tasks/:id", requireAuth(['admin', 'user']), async (c) => {
     // Validate the complete update data
     const fullUpdateData = taskSchema.parse(updateData)
     await updateTask(id, { ...fullUpdateData, user_id: (existingTask as any).user_id })
+    // Invalidate the item cache
+    await cache.del(cacheKeys.taskById(id))
 
     // Return the updated task
     const updatedTask = await getTaskById(id)
+    // Warm the cache with updated entity
+    await cache.set(cacheKeys.taskById(id), JSON.stringify(updatedTask), 60)
     return c.json(updatedTask)
 })
 
@@ -209,6 +244,8 @@ app.delete("/tasks/:id", requireAuth(['admin', 'user']), async (c) => {
     }
 
     await deleteTask(id)
+    // Invalidate item cache
+    await cache.del(cacheKeys.taskById(id))
     return c.json({ message: "Task deleted successfully" })
 })
 
