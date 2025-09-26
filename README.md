@@ -65,8 +65,6 @@ Run tests in watch mode:
 bun test:watch
 ```
 
-## Section 3.2: Role-Based Access Control
-
 ### User Roles
 
 The system implements three distinct user roles:
